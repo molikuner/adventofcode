@@ -65,6 +65,44 @@ function runComputer(memory: Array<bigint>): Array<bigint> {
                 pointer += 2;
                 break;
             }
+            case 5n:
+            case 6n: {
+                const modes = instructionArgumentModes(computeMemory[pointer], 2n);
+                //console.log("jump-if-true/false", currentInstruction, argumentWithMode(pointer + 1, modes[0], computeMemory), pointer, computeMemory[pointer], computeMemory[pointer + 1], modes);
+                if (Boolean(argumentWithMode(pointer + 1, modes[0], computeMemory)) === Boolean(6n - currentInstruction)) {
+                    pointer = Number(argumentWithMode(pointer + 2, modes[1], computeMemory));
+                    //console.log("jumping to", pointer);
+                } else {
+                    pointer += 3;
+                }
+                break;
+            }
+            case 7n: {
+                const modes = instructionArgumentModes(computeMemory[pointer], 2n);
+                //console.log("less than", pointer, computeMemory[pointer], computeMemory[pointer + 1], modes);
+                saveTo(computeMemory,
+                    computeMemory[pointer + 3],
+                    BigInt(
+                        argumentWithMode(pointer + 1, modes[0], computeMemory)
+                        < argumentWithMode(pointer + 2, modes[1], computeMemory)
+                    )
+                );
+                pointer += 4;
+                break;
+            }
+            case 8n: {
+                const modes = instructionArgumentModes(computeMemory[pointer], 2n);
+                //console.log("equals", pointer, computeMemory[pointer], computeMemory[pointer + 1], modes);//, BigInt(argumentWithMode(pointer + 1, modes[0], computeMemory) == argumentWithMode(pointer + 2, modes[1], computeMemory)), argumentWithMode(pointer + 3, modes[0], computeMemory));
+                saveTo(computeMemory,
+                    computeMemory[pointer + 3],
+                    BigInt(
+                        argumentWithMode(pointer + 1, modes[0], computeMemory)
+                        == argumentWithMode(pointer + 2, modes[1], computeMemory)
+                    )
+                );
+                pointer += 4;
+                break;
+            }
             case 99n: {
                 const modes = instructionArgumentModes(computeMemory[pointer], 0n);
                 pointer = computeMemory.length;
