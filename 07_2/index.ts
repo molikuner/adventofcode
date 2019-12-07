@@ -1,8 +1,10 @@
 const readline = require('readline-sync');
+
 class Pair<A, B> {
     constructor(readonly first: A, readonly second: B) {
     }
 }
+
 interface Array<T> {
     flatMap<R>(block: (T) => Array<R>): Array<R>
 
@@ -34,8 +36,13 @@ type ComputerValueType = bigint
 type Output = Array<bigint>
 type Input = Array<bigint>
 
+class ExecutionResult {
+    constructor(readonly finishedWithHalt: boolean, readonly memory: ComputerMemory, readonly output: Output) {
+    }
+}
+
 class ComputerMemory extends Array<ComputerValueType> {
-    constructor(...items: Array<ComputerValueType|number>) {
+    constructor(...items: Array<ComputerValueType | number>) {
         super(...items.map(it => BigInt(it)));
         Object.setPrototypeOf(this, ComputerMemory.prototype);
     }
@@ -71,7 +78,7 @@ class ComputerMemory extends Array<ComputerValueType> {
         this[Number(location)] = value;
     }
 
-    runComputer(input: Input = [], waitOnInput: boolean = false, inPlace: boolean = false): Pair<boolean, Pair<ComputerMemory, Output>> {
+    runComputer(input: Input = [], waitOnInput: boolean = false, inPlace: boolean = false): ExecutionResult {
         const computeMemory: ComputerMemory = (inPlace) ? this : new ComputerMemory(...this);
         const outputs: Output = [];
         for (let pointer: Pointer = 0, memLength = computeMemory.length; pointer < memLength;) {
@@ -111,7 +118,7 @@ class ComputerMemory extends Array<ComputerValueType> {
                         readIn = input.splice(0, 1)[0];
                     } else if (waitOnInput) {
                         console.log(`At instruction ${pointer} need input, pausing computer.`);
-                        return new Pair<boolean, Pair<ComputerMemory, Output>>(false, new Pair<ComputerMemory, Output>(computeMemory, outputs));
+                        return new ExecutionResult(false, computeMemory, outputs);
                     } else {
                         readIn = BigInt(readline.question(`At instruction ${pointer} we need a input: `));
                     }
@@ -175,7 +182,7 @@ class ComputerMemory extends Array<ComputerValueType> {
                     throw new Error("Unknown opcode " + computeMemory[pointer]);
             }
         }
-        return new Pair<boolean, Pair<ComputerMemory, Output>>(true, new Pair<ComputerMemory, Output>(computeMemory, outputs));
+        return new ExecutionResult(true, computeMemory, outputs);
     }
 }
 
@@ -186,24 +193,21 @@ function iterate(initialInputs: Array<ComputerMemory>): bigint {
     const inputs: Array<ComputerMemory> = initialInputs.map(it => new ComputerMemory(...it));
 
     while (true) {
-        for (let amp of inputs.entries()) {
-            const out = inputMemory.runComputer(amp[1], true);
-            const output: Output = out.second.second;
-            const halted: boolean = out.first;
-            const nextAmp = (amp[0] + 1) % inputs.length;
+        for (let [index, amplifier] of inputs.entries()) {
+            const nextAmp = (index + 1) % inputs.length;
+            const {finishedWithHalt, output} = inputMemory.runComputer(amplifier, true);
             inputs[nextAmp] = initialInputs[nextAmp].concat(output);
-            if (halted && amp[0] == inputs.length - 1) return inputs[0][inputs[0].length - 1];
+            if (finishedWithHalt && index == inputs.length - 1) return inputs[0][inputs[0].length - 1];
         }
     }
 }
 
 function findMaxOutput(options: Input): bigint {
     const output = options.permute().map(phases => {
-            const initialInputs: Array<ComputerMemory> = phases.map(it => new ComputerMemory(it));
-            initialInputs[0].push(0n);
-            return iterate(initialInputs)
-        }
-    );
+        const initialInputs: Array<ComputerMemory> = phases.map(it => new ComputerMemory(it));
+        initialInputs[0].push(0n);
+        return iterate(initialInputs)
+    });
     let max = 0n;
     for (let o of output) if (max < o) max = o;
     return max;
