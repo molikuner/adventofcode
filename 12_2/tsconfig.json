@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "esnext",
+    "sourceMap": true,
+    "lib": [
+      "es6",
+      "esnext.bigint",
+      "dom"
+    ]
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
